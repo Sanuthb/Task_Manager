@@ -2,13 +2,33 @@ import streamlit as st
 import requests
 import plotly.express as px
 from datetime import datetime
+import os
 
-API = st.secrets.get('API_URL', 'http://127.0.0.1:5000')
+st.set_page_config(page_title='Task Genius', layout='wide')
+
+def _get_api_base():
+    # 1) Environment variable takes precedence
+    env = os.environ.get("API_URL")
+    if env:
+        return env
+    # 2) Only touch st.secrets if a secrets.toml is present
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+    candidate_paths = [
+        os.path.join(os.path.expanduser("~"), ".streamlit", "secrets.toml"),
+        os.path.join(project_root, ".streamlit", "secrets.toml"),
+    ]
+    if any(os.path.exists(p) for p in candidate_paths):
+        try:
+            return st.secrets.get("API_URL", "http://127.0.0.1:5000")
+        except Exception:
+            pass
+    # 3) Fallback default
+    return "http://127.0.0.1:5000"
+
+API = _get_api_base()
 
 def api(path):
     return f"{API}{path}"
-
-st.set_page_config(page_title='Task Genius', layout='wide')
 
 if 'token' not in st.session_state:
     st.session_state.token = None

@@ -20,7 +20,7 @@ def parse():
 @bp.post('/tasks')
 @jwt_required()
 def create_task():
-    uid = get_jwt_identity()
+    uid = int(get_jwt_identity())
     data = request.get_json() or {}
     title = data.get('title')
     if not title:
@@ -45,7 +45,7 @@ def create_task():
 @bp.get('/tasks')
 @jwt_required()
 def list_tasks():
-    uid = get_jwt_identity()
+    uid = int(get_jwt_identity())
     tasks = Task.query.filter_by(user_id=uid).order_by(Task.priority_score.desc(), Task.due_date.asc().nullsfirst()).all()
     def to_dict(t: Task):
         return {
@@ -65,7 +65,7 @@ def list_tasks():
 @bp.patch('/tasks/<int:task_id>')
 @jwt_required()
 def update_task(task_id):
-    uid = get_jwt_identity()
+    uid = int(get_jwt_identity())
     task = Task.query.filter_by(id=task_id, user_id=uid).first_or_404()
     data = request.get_json() or {}
     for k in ['title','description','category','status','priority','estimated_hours']:
@@ -80,7 +80,7 @@ def update_task(task_id):
 @bp.delete('/tasks/<int:task_id>')
 @jwt_required()
 def delete_task(task_id):
-    uid = get_jwt_identity()
+    uid = int(get_jwt_identity())
     task = Task.query.filter_by(id=task_id, user_id=uid).first_or_404()
     db.session.delete(task)
     db.session.commit()
@@ -89,7 +89,7 @@ def delete_task(task_id):
 @bp.get('/stats')
 @jwt_required()
 def stats():
-    uid = get_jwt_identity()
+    uid = int(get_jwt_identity())
     total = Task.query.filter_by(user_id=uid).count()
     completed = Task.query.filter_by(user_id=uid, status='completed').count()
     pending = Task.query.filter_by(user_id=uid, status='pending').count()
@@ -99,7 +99,7 @@ def stats():
 @bp.post('/export')
 @jwt_required()
 def export():
-    uid = get_jwt_identity()
+    uid = int(get_jwt_identity())
     fmt = (request.args.get('format') or 'excel').lower()
     tasks = Task.query.filter_by(user_id=uid).all()
     rows = []
