@@ -15,3 +15,4 @@ xhtml2pdf==0.2.15
 openpyxl==3.1.2
 streamlit==1.36.0
 requests==2.31.0
+streamlit-mic-recorder==0.0.8

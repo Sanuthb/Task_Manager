@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Task Genius</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <header class="tg-nav">
+    <div class="brand">Task Genius</div>
+    <nav>
+      <a href="#home" class="nav-link active">Home</a>
+      <a href="#login" class="nav-link">Login</a>
+      <a href="#register" class="nav-link">Register</a>
+      <a href="#tasks" class="nav-link protected">Tasks</a>
+      <a href="#dashboard" class="nav-link protected">Dashboard</a>
+      <a href="#export" class="nav-link protected">Export</a>
+      <button id="logoutBtn" class="btn ghost hidden">Logout</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section id="home" class="route">
+      <div class="hero">
+        <div class="badge">AI-Powered Task Manager</div>
+        <h1>Organize smarter. Prioritize with AI.</h1>
+        <p>Natural language input, intelligent prioritization, analytics, and exports.</p>
+        <div class="cta">
+          <a class="btn primary" href="#register">Get Started</a>
+          <a class="btn" href="#login">I already have an account</a>
+        </div>
+      </div>
+      <div class="features">
+        <div class="card">
+          <h3>NLP Input</h3>
+          <p>Type or speak tasks like “Finish AI report by Friday 2h urgent”.</p>
+        </div>
+        <div class="card">
+          <h3>Smart Priority</h3>
+          <p>Heuristic urgency score considers due date and effort.</p>
+        </div>
+        <div class="card">
+          <h3>Insights</h3>
+          <p>Dashboard with trends and category distributions.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="login" class="route hidden">
+      <div class="auth-card card">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <label>Email<input type="email" id="loginEmail" required /></label>
+          <label>Password<input type="password" id="loginPassword" required /></label>
+          <button type="submit" class="btn primary">Login</button>
+        </form>
+        <div id="loginMsg" class="msg"></div>
+      </div>
+    </section>
+
+    <section id="register" class="route hidden">
+      <div class="auth-card card">
+        <h2>Create account</h2>
+        <form id="registerForm">
+          <label>Email<input type="email" id="regEmail" required /></label>
+          <label>Password<input type="password" id="regPassword" required /></label>
+          <button type="submit" class="btn primary">Register</button>
+        </form>
+        <div id="registerMsg" class="msg"></div>
+      </div>
+    </section>
+
+    <section id="tasks" class="route hidden">
+      <div class="card">
+        <h2>Tasks</h2>
+        <div class="row gap">
+          <div class="col">
+            <label>Natural language input
+              <input id="taskText" type="text" placeholder="Finish AI report by Friday 2h urgent" />
+            </label>
+          </div>
+          <div class="col stt">
+            <label>Voice input (optional)</label>
+            <div class="stt-controls">
+              <button id="sttBtn" class="btn">🎤 Speak</button>
+              <span id="sttStatus" class="muted">Idle</span>
+            </div>
+          </div>
+          <div class="col auto">
+            <button id="parseAddBtn" class="btn primary">Parse and Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="tasksList">
+        <div class="list-head">
+          <span>Title</span><span>Category</span><span>Priority</span><span>Due</span><span>Score</span><span></span>
+        </div>
+        <div id="tasksContainer" class="list-body"></div>
+      </div>
+    </section>
+
+    <section id="dashboard" class="route hidden">
+      <div class="grid two">
+        <div class="card">
+          <h3>Overview</h3>
+          <div class="metrics">
+            <div class="metric"><div class="label">Total</div><div id="mTotal" class="value">0</div></div>
+            <div class="metric"><div class="label">Pending</div><div id="mPending" class="value">0</div></div>
+            <div class="metric"><div class="label">In Progress</div><div id="mInProgress" class="value">0</div></div>
+            <div class="metric"><div class="label">Completed</div><div id="mCompleted" class="value">0</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Priority score by category</h3>
+          <div id="chart" style="height:360px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="export" class="route hidden">
+      <div class="card">
+        <h2>Export</h2>
+        <div class="row">
+          <button id="exportExcel" class="btn">Export to Excel</button>
+          <button id="exportPdf" class="btn">Export to PDF</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

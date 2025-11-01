@@ -119,3 +119,17 @@ def export():
         return send_file(BytesIO(data), mimetype='application/pdf', as_attachment=True, download_name='tasks.pdf')
     data = to_excel(rows)
     return send_file(BytesIO(data), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name='tasks.xlsx')
+
+@bp.post('/tasks/<int:task_id>/subtasks')
+@jwt_required()
+def create_subtask(task_id: int):
+    uid = int(get_jwt_identity())
+    task = Task.query.filter_by(id=task_id, user_id=uid).first_or_404()
+    data = request.get_json() or {}
+    title = data.get('title')
+    if not title:
+        return jsonify({'message': 'title is required'}), 400
+    sub = Subtask(task_id=task.id, title=title)
+    db.session.add(sub)
+    db.session.commit()
+    return jsonify({'id': sub.id}), 201
