@@ -15,6 +15,7 @@ def parse():
     data = request.get_json() or {}
     text = data.get('text', '')
     parsed = parse_task_text(text)
+    # The new field 'reminder_date' is now in the parsed dict
     return jsonify(parsed)
 
 @bp.post('/tasks')
@@ -25,8 +26,13 @@ def create_task():
     title = data.get('title')
     if not title:
         return jsonify({'message': 'title is required'}), 400
+        
     due_date = data.get('due_date')
     due_dt = datetime.fromisoformat(due_date) if due_date else None
+    
+    reminder_date = data.get('reminder_date') # NEW: Extract reminder date
+    reminder_dt = datetime.fromisoformat(reminder_date) if reminder_date else None # NEW
+
     task = Task(
         user_id=uid,
         title=title,
@@ -35,7 +41,8 @@ def create_task():
         status=data.get('status', 'pending'),
         priority=data.get('priority', 'medium'),
         due_date=due_dt,
-        estimated_hours=data.get('estimated_hours')
+        estimated_hours=data.get('estimated_hours'),
+        reminder_date=reminder_dt # NEW: Save reminder date
     )
     task_data = {
         'title': title,
@@ -65,6 +72,7 @@ def list_tasks():
             'due_date': t.due_date.isoformat() if t.due_date else None,
             'estimated_hours': t.estimated_hours,
             'priority_score': t.priority_score,
+            'reminder_date': t.reminder_date.isoformat() if t.reminder_date else None, # NEW: Return reminder date
             'created_at': t.created_at.isoformat(),
         }
     return jsonify([to_dict(t) for t in tasks])
@@ -75,11 +83,18 @@ def update_task(task_id):
     uid = int(get_jwt_identity())
     task = Task.query.filter_by(id=task_id, user_id=uid).first_or_404()
     data = request.get_json() or {}
+    
     for k in ['title','description','category','status','priority','estimated_hours']:
         if k in data:
             setattr(task, k, data[k])
+            
     if 'due_date' in data:
         task.due_date = datetime.fromisoformat(data['due_date']) if data['due_date'] else None
+        
+    if 'reminder_date' in data: # NEW: Handle reminder date update
+        task.reminder_date = datetime.fromisoformat(data['reminder_date']) if data['reminder_date'] else None
+
+    # Recalculate AI score (if relevant fields changed)
     task_data = {
         'title': task.title,
         'description': task.description,

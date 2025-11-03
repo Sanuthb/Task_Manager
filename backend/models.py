@@ -27,6 +27,7 @@ class Task(db.Model):
     due_date = db.Column(db.DateTime, nullable=True)
     estimated_hours = db.Column(db.Float, nullable=True)
     priority_score = db.Column(db.Float, default=0.0)
+    reminder_date = db.Column(db.DateTime, nullable=True) # NEW COLUMN
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Subtask(db.Model):
