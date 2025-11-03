@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from io import BytesIO
 from ..models import db, Task, Subtask, ProgressLog
 from ..services.nlp import parse_task_text
-from ..services.ml import heuristic_priority_score
+from ..services.ml import gemini_priority_score
 from ..services.exports import to_excel, to_pdf
 
 bp = Blueprint('tasks', __name__, url_prefix='/api')
@@ -37,7 +37,14 @@ def create_task():
         due_date=due_dt,
         estimated_hours=data.get('estimated_hours')
     )
-    task.priority_score = heuristic_priority_score(task.priority, task.due_date, task.estimated_hours)
+    task_data = {
+        'title': title,
+        'description': data.get('description'),
+        'priority': task.priority,
+        'due_date': data.get('due_date'),
+        'estimated_hours': data.get('estimated_hours')
+    }
+    task.priority_score = gemini_priority_score(task_data)
     db.session.add(task)
     db.session.commit()
     return jsonify({'id': task.id}), 201
@@ -73,7 +80,14 @@ def update_task(task_id):
             setattr(task, k, data[k])
     if 'due_date' in data:
         task.due_date = datetime.fromisoformat(data['due_date']) if data['due_date'] else None
-    task.priority_score = heuristic_priority_score(task.priority, task.due_date, task.estimated_hours)
+    task_data = {
+        'title': task.title,
+        'description': task.description,
+        'priority': task.priority,
+        'due_date': task.due_date.isoformat() if task.due_date else None,
+        'estimated_hours': task.estimated_hours
+    }
+    task.priority_score = gemini_priority_score(task_data)
     db.session.commit()
     return jsonify({'message': 'updated'})
 
