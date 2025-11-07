@@ -29,6 +29,7 @@ class Task(db.Model):
     priority_score = db.Column(db.Float, default=0.0)
     reminder_date = db.Column(db.DateTime, nullable=True) # NEW COLUMN
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    subtasks = db.relationship('Subtask', backref='task', lazy='dynamic', cascade="all, delete-orphan")
 
 class Subtask(db.Model):
     id = db.Column(db.Integer, primary_key=True)

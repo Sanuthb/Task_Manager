@@ -60,7 +60,28 @@ def create_task():
 @jwt_required()
 def list_tasks():
     uid = int(get_jwt_identity())
-    tasks = Task.query.filter_by(user_id=uid).order_by(Task.priority_score.desc(), Task.due_date.asc().nullsfirst()).all()
+    
+    # --- START FEATURE 5: Filtering Tasks ---
+    query = Task.query.filter_by(user_id=uid)
+    
+    status_filter = request.args.get('status')
+    priority_filter = request.args.get('priority')
+    category_filter = request.args.get('category')
+    
+    if status_filter:
+        query = query.filter(Task.status == status_filter)
+    if priority_filter:
+        query = query.filter(Task.priority == priority_filter)
+    if category_filter:
+        query = query.filter(Task.category == category_filter)
+    
+    tasks = query.order_by(Task.priority_score.desc(), Task.due_date.asc().nullsfirst()).all()
+    # --- END FEATURE 5: Filtering Tasks ---
+
+    # Utility to convert subtask to dict
+    def subtask_to_dict(s: Subtask):
+        return {'id': s.id, 'title': s.title, 'status': s.status}
+        
     def to_dict(t: Task):
         return {
             'id': t.id,
@@ -72,7 +93,10 @@ def list_tasks():
             'due_date': t.due_date.isoformat() if t.due_date else None,
             'estimated_hours': t.estimated_hours,
             'priority_score': t.priority_score,
-            'reminder_date': t.reminder_date.isoformat() if t.reminder_date else None, # NEW: Return reminder date
+            'reminder_date': t.reminder_date.isoformat() if t.reminder_date else None,
+            # --- START FEATURE 6: Subtasks ---
+            'subtasks': [subtask_to_dict(s) for s in t.subtasks.all()],
+            # --- END FEATURE 6: Subtasks ---
             'created_at': t.created_at.isoformat(),
         }
     return jsonify([to_dict(t) for t in tasks])
@@ -84,25 +108,33 @@ def update_task(task_id):
     task = Task.query.filter_by(id=task_id, user_id=uid).first_or_404()
     data = request.get_json() or {}
     
+    # Recalculate flag
+    recalculate_score = False
+    
     for k in ['title','description','category','status','priority','estimated_hours']:
         if k in data:
             setattr(task, k, data[k])
+            if k in ['title', 'description', 'priority', 'estimated_hours']:
+                recalculate_score = True
             
     if 'due_date' in data:
         task.due_date = datetime.fromisoformat(data['due_date']) if data['due_date'] else None
+        recalculate_score = True # Due date affects priority score
         
     if 'reminder_date' in data: # NEW: Handle reminder date update
         task.reminder_date = datetime.fromisoformat(data['reminder_date']) if data['reminder_date'] else None
 
     # Recalculate AI score (if relevant fields changed)
-    task_data = {
-        'title': task.title,
-        'description': task.description,
-        'priority': task.priority,
-        'due_date': task.due_date.isoformat() if task.due_date else None,
-        'estimated_hours': task.estimated_hours
-    }
-    task.priority_score = gemini_priority_score(task_data)
+    if recalculate_score:
+        task_data = {
+            'title': task.title,
+            'description': task.description,
+            'priority': task.priority,
+            'due_date': task.due_date.isoformat() if task.due_date else None,
+            'estimated_hours': task.estimated_hours
+        }
+        task.priority_score = gemini_priority_score(task_data)
+        
     db.session.commit()
     return jsonify({'message': 'updated'})
 
@@ -162,3 +194,53 @@ def create_subtask(task_id: int):
     db.session.add(sub)
     db.session.commit()
     return jsonify({'id': sub.id}), 201
+
+# --- START FEATURE 6: New Subtask Management Endpoints ---
+
+@bp.get('/tasks/<int:task_id>/subtasks')
+@jwt_required()
+def list_subtasks(task_id: int):
+    uid = int(get_jwt_identity())
+    task = Task.query.filter_by(id=task_id, user_id=uid).first_or_404()
+    
+    def subtask_to_dict(s: Subtask):
+        return {'id': s.id, 'title': s.title, 'status': s.status}
+
+    subtasks = Subtask.query.filter_by(task_id=task.id).all()
+    return jsonify([subtask_to_dict(s) for s in subtasks])
+
+
+@bp.patch('/subtasks/<int:subtask_id>')
+@jwt_required()
+def update_subtask(subtask_id: int):
+    uid = int(get_jwt_identity())
+    sub = Subtask.query.get_or_404(subtask_id)
+
+    # Check ownership via the parent task
+    if sub.task.user_id != uid:
+        return jsonify({'message': 'Forbidden'}), 403
+
+    data = request.get_json() or {}
+    if 'title' in data:
+        sub.title = data['title']
+    if 'status' in data:
+        sub.status = data['status']
+        
+    db.session.commit()
+    return jsonify({'message': 'updated'})
+
+
+@bp.delete('/subtasks/<int:subtask_id>')
+@jwt_required()
+def delete_subtask(subtask_id: int):
+    uid = int(get_jwt_identity())
+    sub = Subtask.query.get_or_404(subtask_id)
+
+    # Check ownership via the parent task
+    if sub.task.user_id != uid:
+        return jsonify({'message': 'Forbidden'}), 403
+
+    db.session.delete(sub)
+    db.session.commit()
+    return jsonify({'message': 'deleted'})
+# --- END FEATURE 6: New Subtask Management Endpoints ---
