@@ -146,11 +146,11 @@ export default function NewTaskModal({ onCreated, onCancel }) {
             value={nlText} onChange={(e) => setNlText(e.target.value)} fullWidth multiline minRows={1} />
             
           <Stack direction="row" spacing={1} alignItems="center">
-            <Button variant="contained" onClick={parse} disabled={busy || !nlText.trim()}>Parse and Fill</Button>
+            <Button variant="contained" color="secondary" onClick={parse} disabled={busy || !nlText.trim()}>Parse and Fill</Button>
             <Tooltip title={listening ? 'Stop voice input' : (recognizer ? 'Start voice input' : 'Voice not supported')}>
               <span>
                 <IconButton 
-                    color={listening ? 'error' : 'primary'} 
+                    color={listening ? 'error' : 'default'} 
                     onClick={listening ? stopVoice : startVoice} 
                     disabled={!recognizer || busy}
                 >

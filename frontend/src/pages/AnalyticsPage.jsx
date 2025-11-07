@@ -8,7 +8,7 @@ function MetricCard({ label, value }) {
     <Card variant="outlined">
       <CardContent>
         <Typography variant="overline" color="text.secondary">{label}</Typography>
-        <Typography variant="h4">{value}</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800 }}>{value}</Typography>
       </CardContent>
     </Card>
   );
@@ -58,29 +58,29 @@ export default function AnalyticsPage() {
   }, [tasks]);
 
   return (
-    <Box>
-      <Typography variant="h5" sx={{ mb: 2 }}>Analytics</Typography>
+    <Box sx={{ pr: 5, pl:5 }}>
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>Analytics</Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={3}><MetricCard label="Total" value={stats.total ?? 0} /></Grid>
-        <Grid item xs={12} md={3}><MetricCard label="Pending" value={stats.pending ?? 0} /></Grid>
-        <Grid item xs={12} md={3}><MetricCard label="In Progress" value={stats.in_progress ?? 0} /></Grid>
-        <Grid item xs={12} md={3}><MetricCard label="Completed" value={stats.completed ?? 0} /></Grid>
+        <Grid width={500} item xs={12} md={3}><MetricCard label="Total" value={stats.total ?? 0} /></Grid>
+        <Grid width={500} item xs={12} md={3}><MetricCard label="Pending" value={stats.pending ?? 0} /></Grid>
+        <Grid width={500} item xs={12} md={3}><MetricCard label="In Progress" value={stats.in_progress ?? 0} /></Grid>
+        <Grid width={500} item xs={12} md={3}><MetricCard label="Completed" value={stats.completed ?? 0} /></Grid>
       </Grid>
 
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid item xs={12} md={6}>
+      <Grid container spacing={2} sx={{ mt: 4 }}>
+        <Grid item xs={12} md={6} width={1030}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>Task Distribution by Status</Typography>
               <Box sx={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={statusData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
                     <XAxis dataKey="name" />
                     <YAxis allowDecimals={false} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#1976d2" />
+                    <Bar dataKey="count" fill="#3b82f6" />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
@@ -88,18 +88,18 @@ export default function AnalyticsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} width={1030}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>Task Distribution by Priority</Typography>
               <Box sx={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={priorityData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
                     <XAxis dataKey="name" />
                     <YAxis allowDecimals={false} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#9c27b0" />
+                    <Bar dataKey="count" fill="#06b6d4" />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
@@ -107,19 +107,19 @@ export default function AnalyticsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid item xs={12} width={1030}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>Average Priority Score by Category</Typography>
               <Box sx={{ height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={scoreByCategory} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
                     <XAxis dataKey="name" angle={-15} textAnchor="end" interval={0} height={60} />
                     <YAxis domain={[0, 100]} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="avg" name="Avg Score" fill="#2e7d32" />
+                    <Bar dataKey="avg" name="Avg Score" fill="#16a34a" />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
