@@ -20,24 +20,30 @@ python -m flask run --app backend.app --debug
 ```
 The API will be at http://127.0.0.1:5000
 
-## Run frontend (Streamlit)
+
+## setup frontend (react)
 ```powershell
-streamlit run frontend/streamlit_app.py
+npm install
 ```
 
-Optionally set Streamlit secret `API_URL` if backend runs elsewhere:
+## Run frontend (react)
+```powershell
+npm run dev 
 ```
-# .streamlit/secrets.toml
-API_URL = "http://127.0.0.1:5000"
-```
+## To setup email 
 
-## Features
-- Natural language task input with due date/priority/category extraction.
-- Heuristic priority score with due date proximity and estimate.
-- JWT auth, per-user task storage (SQLite).
-- Dashboard and Plotly charts.
-- Export to Excel/PDF.
+Go to https://myaccount.google.com/security
 
-## Notes
-- NLP uses `dateparser` and simple keyword/entity rules.
-- Replace heuristic with trained models later; API surface remains compatible.
+Turn on 2-Step Verification.
+
+Under “App passwords” → create one for “taskmanagerapp”.
+
+Copy the 16-character app password (looks like abcd efgh ijkl mnop).
+
+
+Add the following to the .env file in the backend folder:
+
+SMTP_USER="your-mail@gmail.com"
+SMTP_PASSWORD="your-app-password"
+MAIL_FROM_NAME="Task Manager"
+

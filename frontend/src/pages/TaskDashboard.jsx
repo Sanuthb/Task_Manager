@@ -8,6 +8,7 @@ import EventIcon from '@mui/icons-material/Event';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LabelIcon from '@mui/icons-material/Label';
 import AlarmOnIcon from '@mui/icons-material/AlarmOn'; // NEW
+import SnoozeIcon from '@mui/icons-material/Snooze';
 import axios from 'axios';
 import NewTaskModal from '../components/NewTaskModal.jsx';
 import ExportButtons from '../components/ExportButtons.jsx';
@@ -49,7 +50,7 @@ const StyledTaskCard = styled(Card)(({ theme }) => ({
     },
 }));
 
-function TaskCard({ task, onMarkDone, onDelete, onRecalc }) {
+function TaskCard({ task, onMarkDone, onDelete, onRecalc, onSnooze }) {
   const priority = getPriorityProps(task.priority);
   const due = getDueChipProps(task.due_date);
 
@@ -136,6 +137,11 @@ function TaskCard({ task, onMarkDone, onDelete, onRecalc }) {
                 <AutoFixHighIcon fontSize="small" color="primary" />
               </IconButton>
             </Tooltip>
+            <Tooltip title="Snooze 10 minutes">
+              <IconButton size="small" onClick={() => onSnooze?.(task.id, 10)} sx={{ p: '4px' }}>
+                <SnoozeIcon fontSize="small" color="action" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Delete Task">
               <IconButton size="small" color="error" onClick={() => onDelete(task.id)} sx={{ p: '4px' }}>
                 <DeleteIcon fontSize="small" />
@@ -149,7 +155,7 @@ function TaskCard({ task, onMarkDone, onDelete, onRecalc }) {
 
 
 // --- Kanban Column Component (Remains the same as last successful revision) ---
-function Column({ title, tasks, statusKey, onMarkDone, onDelete, onRecalc, onDropTask }) {
+function Column({ title, tasks, statusKey, onMarkDone, onDelete, onRecalc, onDropTask, onSnooze }) {
   return (
     <Box sx={{ 
         minHeight: '80vh', 
@@ -184,7 +190,8 @@ function Column({ title, tasks, statusKey, onMarkDone, onDelete, onRecalc, onDro
             task={t} 
             onMarkDone={onMarkDone} 
             onDelete={onDelete} 
-            onRecalc={onRecalc} 
+            onRecalc={onRecalc}
+            onSnooze={onSnooze}
           />
         ))}
         {tasks.length === 0 && (
@@ -306,6 +313,15 @@ export default function TaskDashboard() {
     }
   };
 
+  const snooze = async (id, minutes = 10) => {
+    try {
+      await axios.post(`/api/tasks/${id}/snooze?minutes=${minutes}`);
+      await loadTasks();
+    } catch (e) {
+      // ignore UI error for now
+    }
+  };
+
   const updateTaskStatus = async (id, status) => {
     // optimistic update
     setTasks(prev => prev.map(t => (t.id === Number(id) || t.id === id) ? { ...t, status } : t));
@@ -364,6 +380,7 @@ export default function TaskDashboard() {
               onMarkDone={markDone}
               onDelete={remove}
               onRecalc={recalc}
+              onSnooze={snooze}
             />
           </Grid>
           <Grid item xs={12} md={4}>
@@ -375,6 +392,7 @@ export default function TaskDashboard() {
               onMarkDone={markDone}
               onDelete={remove}
               onRecalc={recalc}
+              onSnooze={snooze}
             />
           </Grid>
           <Grid item xs={12} md={4}>
@@ -386,6 +404,7 @@ export default function TaskDashboard() {
               onMarkDone={markDone}
               onDelete={remove}
               onRecalc={recalc}
+              onSnooze={snooze}
             />
           </Grid>
         </Grid>

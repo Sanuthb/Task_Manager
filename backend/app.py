@@ -2,14 +2,20 @@ import os
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
 from .config import Config
 from .models import db
 from .auth import bp as auth_bp
 from .routes.tasks import bp as tasks_bp
+from .services.reminder import start_reminder_worker
 
 
 def create_app():
     app = Flask(__name__)
+    # Load env from backend/.env
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
     app.config.from_object(Config)
     CORS(app)
     db.init_app(app)
@@ -17,6 +23,8 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        # Start reminder worker (idempotent)
+        start_reminder_worker(app)
 
     @app.get('/api/health')
     def health():

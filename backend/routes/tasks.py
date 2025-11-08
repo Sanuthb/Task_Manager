@@ -1,11 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from io import BytesIO
-from ..models import db, Task, Subtask, ProgressLog
+from ..models import db, Task, Subtask, ProgressLog, User
 from ..services.nlp import parse_task_text
 from ..services.ml import gemini_priority_score
 from ..services.exports import to_excel, to_pdf
+from ..services.email import send_email
 
 bp = Blueprint('tasks', __name__, url_prefix='/api')
 
@@ -54,6 +55,23 @@ def create_task():
     task.priority_score = gemini_priority_score(task_data)
     db.session.add(task)
     db.session.commit()
+
+    # Send Task Created email (best-effort; do not fail the request if email errors)
+    try:
+        user = User.query.get(uid)
+        if user and user.email:
+            subject = f"Task Created: {task.title}"
+            parts = [
+                f"Title: {task.title}",
+                f"Description: {task.description or '-'}",
+                f"Priority: {task.priority}",
+                f"Due: {task.due_date.isoformat() if task.due_date else '-'}",
+                f"Reminder: {task.reminder_date.isoformat() if task.reminder_date else '-'}",
+            ]
+            body = "\n".join(parts)
+            send_email(subject, user.email, body)
+    except Exception:
+        pass
     return jsonify({'id': task.id}), 201
 
 @bp.get('/tasks')
@@ -180,6 +198,21 @@ def export():
         return send_file(BytesIO(data), mimetype='application/pdf', as_attachment=True, download_name='tasks.pdf')
     data = to_excel(rows)
     return send_file(BytesIO(data), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name='tasks.xlsx')
+
+@bp.post('/tasks/<int:task_id>/snooze')
+@jwt_required()
+def snooze_task(task_id):
+    uid = int(get_jwt_identity())
+    task = Task.query.filter_by(id=task_id, user_id=uid).first_or_404()
+    try:
+        minutes = int(request.args.get('minutes', '10'))
+    except ValueError:
+        return jsonify({'message': 'invalid minutes'}), 400
+
+    base = task.reminder_date or datetime.now()
+    task.reminder_date = base + timedelta(minutes=minutes)
+    db.session.commit()
+    return jsonify({'reminder_date': task.reminder_date.isoformat()})
 
 @bp.post('/tasks/<int:task_id>/subtasks')
 @jwt_required()

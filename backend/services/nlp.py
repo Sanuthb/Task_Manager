@@ -44,26 +44,52 @@ def parse_task_text(text: str):
     # --- NEW: Reminder Logic ---
     reminder_date = None
     text_lower = text.lower()
-    
-    # Try to parse a specific reminder time related to the main date
-    reminder_match = re.search(r"(remind me|notify me|alert me) (at|on|by) (.+)", text_lower)
-    if reminder_match:
-        # Extract the potential time phrase
-        potential_reminder_text = reminder_match.group(3).split(' ')[0]
-        
-        # Parse it relative to the due date, or now if no due date
-        base_date = due_date or datetime.now()
-        parsed_reminder = dateparser.parse(potential_reminder_text, settings={'RELATIVE_BASE': base_date, 'PREFER_DATES_FROM': 'future'})
-        if parsed_reminder and (not due_date or parsed_reminder < due_date):
-            reminder_date = parsed_reminder
 
-    # Fallback: Set a default reminder offset (2 hours) if a due date exists but no explicit reminder was found
+    # 1) Explicit forms: "remind/notify/alert me at|on|by <phrase>"
+    reminder_match = re.search(r"\b(remind\s+me|notify\s+me|alert\s+me)\s+(at|on|by)\s+(.+)", text_lower)
+    if reminder_match and not reminder_date:
+        potential_reminder_text = reminder_match.group(3).strip()
+        base_date = due_date or datetime.now()
+        parsed_reminder = dateparser.parse(
+            potential_reminder_text,
+            settings={'RELATIVE_BASE': base_date, 'PREFER_DATES_FROM': 'future'}
+        )
+        if parsed_reminder:
+            # If due_date exists and parsed reminder is after due_date, keep due_date precedence
+            if not due_date or parsed_reminder <= due_date:
+                reminder_date = parsed_reminder
+
+    # 2) Time-only phrases like: "by 9:00pm" or "at 9 pm" even without due_date
+    if not reminder_date:
+        m_time_only = re.search(r"\b(by|at)\s+([0-9]{1,2}(:[0-9]{2})?\s*(am|pm)?)\b", text_lower)
+        if m_time_only:
+            time_phrase = m_time_only.group(0)  # include the by/at for better parsing context
+            base_date = due_date or datetime.now()
+            parsed_time = dateparser.parse(
+                time_phrase,
+                settings={'RELATIVE_BASE': base_date, 'PREFER_DATES_FROM': 'future'}
+            )
+            if parsed_time:
+                # If there is a due_date, prefer same-day time before due
+                if due_date:
+                    # If parsed time lacks date, dateparser uses base_date. Ensure not after due_date.
+                    if parsed_time <= due_date:
+                        reminder_date = parsed_time
+                else:
+                    # No due_date: ensure it's in the future relative to now; if not, move to next day
+                    now = datetime.now()
+                    if parsed_time <= now:
+                        reminder_date = parsed_time + timedelta(days=1)
+                    else:
+                        reminder_date = parsed_time
+
+    # 3) Fallback: If a due date exists but no explicit reminder was found, set 2 hours before due
     if due_date and not reminder_date:
         reminder_date = due_date - timedelta(hours=2)
-    
-    # Safety check: Ensure reminder is not set too close to creation time (1 minute buffer)
+
+    # Safety: Ensure reminder is not in the immediate past; if so, drop it
     if reminder_date and reminder_date < datetime.utcnow() + timedelta(minutes=1):
-         reminder_date = None
+        reminder_date = None
 
 
     return {

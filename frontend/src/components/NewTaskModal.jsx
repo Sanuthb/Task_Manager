@@ -21,7 +21,8 @@ export default function NewTaskModal({ onCreated, onCancel }) {
     category: '',
     priority: 'medium',
     due_date: '',
-    estimated_hours: ''
+    estimated_hours: '',
+    reminder_date: ''
   });
   const [busy, setBusy] = useState(false);
   const [uiMessage, setUiMessage] = useState(null); // Used for all feedback, including voice error
@@ -107,6 +108,8 @@ export default function NewTaskModal({ onCreated, onCancel }) {
         priority: p.priority || prev.priority,
         due_date: p.due_date ? p.due_date.substring(0, 10) : prev.due_date,
         estimated_hours: p.estimated_hours ?? prev.estimated_hours,
+        // Expect ISO string; trim to 'YYYY-MM-DDTHH:MM' for datetime-local input
+        reminder_date: p.reminder_date ? p.reminder_date.substring(0, 16) : prev.reminder_date,
       }));
       setUiMessage({ severity: 'success', text: 'Text parsed successfully. Review details below.' });
     } catch (err) {
@@ -120,11 +123,16 @@ export default function NewTaskModal({ onCreated, onCancel }) {
     setBusy(true);
     setUiMessage(null);
     const due_date_iso = form.due_date ? new Date(form.due_date).toISOString().split('T')[0] : null;
+    // Convert datetime-local value 'YYYY-MM-DDTHH:MM' to ISO-like without timezone for backend
+    const reminder_date_iso = form.reminder_date
+      ? (form.reminder_date.length === 16 ? `${form.reminder_date}:00` : form.reminder_date)
+      : null;
 
     try {
       const payload = {
         ...form,
         due_date: due_date_iso,
+        reminder_date: reminder_date_iso,
         estimated_hours: form.estimated_hours === '' ? null : Number(form.estimated_hours),
       };
       await axios.post('/api/tasks', payload);
@@ -183,6 +191,17 @@ export default function NewTaskModal({ onCreated, onCancel }) {
             <Grid item xs={12} md={6}>
               <TextField label="Estimated Hours (Optional)" type="number" inputProps={{ min: 0, step: '0.5' }} value={form.estimated_hours}
                 onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} fullWidth />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Reminder (Optional)"
+                type="datetime-local"
+                value={form.reminder_date || ''}
+                onChange={(e) => setForm({ ...form, reminder_date: e.target.value })}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                helperText="Choose a date and time to receive an email reminder"
+              />
             </Grid>
           </Grid>
         </Stack>
